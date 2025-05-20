@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Resizable Love Text</title>
+  <title>I ❤️ U</title>
   <style>
     body {
       margin: 0;
@@ -13,18 +13,21 @@
       justify-content: center;
       font-family: Arial, sans-serif;
       user-select: none;
+      overflow: hidden;
     }
 
     .container {
-      position: relative;
-      display: inline-block;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      text-align: center;
     }
 
-    .text {
+    #loveText {
       font-size: 80px;
       font-weight: bold;
       color: #6b3fbc;
-      white-space: nowrap;
       transition: all 0.2s ease;
     }
 
@@ -32,35 +35,34 @@
       color: red;
     }
 
-    .resizer {
-      width: 20px;
-      height: 100%;
-      position: absolute;
-      right: -10px;
-      top: 0;
-      cursor: ew-resize;
+    #dragArea {
+      margin-top: 30px;
       background: rgba(0, 0, 0, 0.1);
-      border-radius: 5px;
+      padding: 10px 20px;
+      border-radius: 10px;
+      cursor: grab;
+      touch-action: none;
+      user-select: none;
+    }
+
+    #dragArea:active {
+      cursor: grabbing;
     }
   </style>
 </head>
 <body>
 
-  <div class="container" id="container">
-    <div class="text" id="loveText">I Love You</div>
-    <div class="resizer" id="resizer"></div>
+  <div class="container">
+    <div id="loveText">I Love You</div>
+    <div id="dragArea">Geser ke kanan / kiri 💕</div>
+    <audio id="popSound" src="bubble-pop-293342.mp3" preload="auto"></audio>
   </div>
 
-  <!-- Sound effect -->
-  <audio id="popSound" src="https://github.com/DarielAfronZahMaulana/Punya-Dariel/blob/main/bubble-pop-293342.mp3" preload="auto"></audio>
-
-  <!-- mo.js for burst -->
   <script src="https://cdn.jsdelivr.net/npm/@mojs/core"></script>
 
   <script>
     const loveText = document.getElementById('loveText');
-    const resizer = document.getElementById('resizer');
-    const container = document.getElementById('container');
+    const dragArea = document.getElementById('dragArea');
     const popSound = document.getElementById('popSound');
 
     const stages = [
@@ -70,24 +72,14 @@
       "<span class='heart'>❤️</span>"
     ];
 
-    const fontSizeMin = 40;
-    const fontSizeMax = 80;
-    let isDragging = false;
-    let startX;
-    let startFontSize;
-
-    function getStageByFontSize(size) {
-      const percent = (size - fontSizeMin) / (fontSizeMax - fontSizeMin);
-      if (percent >= 0.75) return 0;
-      if (percent >= 0.5) return 1;
-      if (percent >= 0.25) return 2;
-      return 3;
-    }
+    let currentStage = 0;
+    let startX = 0;
 
     function updateText(stage) {
       loveText.innerHTML = stages[stage];
       popSound.currentTime = 0;
-      popSound.play();
+      popSound.play().catch(e => console.log('Audio blocked:', e));
+
       new mojs.Burst({
         parent: loveText,
         radius: { 0: 80 },
@@ -102,59 +94,46 @@
       }).play();
     }
 
-    // Mouse support
-    resizer.addEventListener('mousedown', (e) => {
-      isDragging = true;
+    function handleSlide(deltaX) {
+      if (Math.abs(deltaX) < 30) return;
+
+      if (deltaX > 0 && currentStage > 0) {
+        currentStage--;
+        updateText(currentStage);
+      } else if (deltaX < 0 && currentStage < stages.length - 1) {
+        currentStage++;
+        updateText(currentStage);
+      }
+    }
+
+    // Mouse events
+    dragArea.addEventListener('mousedown', (e) => {
       startX = e.clientX;
-      startFontSize = parseInt(window.getComputedStyle(loveText).fontSize);
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
     });
 
-    document.addEventListener('mousemove', (e) => {
-      if (!isDragging) return;
-      const dx = e.clientX - startX;
-      let newFontSize = startFontSize + dx;
-      newFontSize = Math.max(fontSizeMin, Math.min(fontSizeMax, newFontSize));
-      loveText.style.fontSize = newFontSize + 'px';
+    function onMouseMove(e) {
+      const deltaX = e.clientX - startX;
+      handleSlide(deltaX);
+      startX = e.clientX;
+    }
 
-      const stage = getStageByFontSize(newFontSize);
-      if (loveText.dataset.stage != stage) {
-        updateText(stage);
-        loveText.dataset.stage = stage;
-      }
-    });
+    function onMouseUp() {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    }
 
-    document.addEventListener('mouseup', () => {
-      isDragging = false;
-    });
-
-    // Touch support
-    resizer.addEventListener('touchstart', (e) => {
-      isDragging = true;
+    // Touch events
+    dragArea.addEventListener('touchstart', (e) => {
       startX = e.touches[0].clientX;
-      startFontSize = parseInt(window.getComputedStyle(loveText).fontSize);
-      e.preventDefault();
     });
 
-    document.addEventListener('touchmove', (e) => {
-      if (!isDragging) return;
-      const dx = e.touches[0].clientX - startX;
-      let newFontSize = startFontSize + dx;
-      newFontSize = Math.max(fontSizeMin, Math.min(fontSizeMax, newFontSize));
-      loveText.style.fontSize = newFontSize + 'px';
-
-      const stage = getStageByFontSize(newFontSize);
-      if (loveText.dataset.stage != stage) {
-        updateText(stage);
-        loveText.dataset.stage = stage;
-      }
+    dragArea.addEventListener('touchmove', (e) => {
+      const deltaX = e.touches[0].clientX - startX;
+      handleSlide(deltaX);
+      startX = e.touches[0].clientX;
     });
-
-    document.addEventListener('touchend', () => {
-      isDragging = false;
-    });
-
-    // Init
-    loveText.dataset.stage = "0";
   </script>
 
 </body>
