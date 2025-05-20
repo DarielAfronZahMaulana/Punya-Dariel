@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Resizable Love Text</title>
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      background-color: #ffcd7d;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, sans-serif;
+      user-select: none;
+    }
+
+    .container {
+      position: relative;
+      display: inline-block;
+    }
+
+    .text {
+      font-size: 80px;
+      font-weight: bold;
+      color: #6b3fbc;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+
+    .heart {
+      color: red;
+    }
+
+    .resizer {
+      width: 20px;
+      height: 100%;
+      position: absolute;
+      right: -10px;
+      top: 0;
+      cursor: ew-resize;
+      background: rgba(0, 0, 0, 0.1);
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container" id="container">
+    <div class="text" id="loveText">I Love You</div>
+    <div class="resizer" id="resizer"></div>
+  </div>
+
+  <!-- mo.js for burst -->
+  <script src="https://cdn.jsdelivr.net/npm/@mojs/core"></script>
+
+  <script>
+    const loveText = document.getElementById('loveText');
+    const resizer = document.getElementById('resizer');
+    const container = document.getElementById('container');
+
+    // Removed audio element and popSound usage
+
+    const stages = [
+      "I Love You",
+      "I <span class='heart'>❤️</span> You",
+      "I<span class='heart'>❤️</span>U",
+      "<span class='heart'>❤️</span>"
+    ];
+
+    const fontSizeMin = 40;
+    const fontSizeMax = 80;
+    let isDragging = false;
+    let startX;
+    let startFontSize;
+
+    function getStageByFontSize(size) {
+      const percent = (size - fontSizeMin) / (fontSizeMax - fontSizeMin);
+      if (percent >= 0.75) return 0;
+      if (percent >= 0.5) return 1;
+      if (percent >= 0.25) return 2;
+      return 3;
+    }
+
+    function updateText(stage) {
+      loveText.innerHTML = stages[stage];
+      // Removed popSound playback to avoid errors if audio is missing
+
+      new mojs.Burst({
+        parent: loveText,
+        radius: { 0: 80 },
+        count: 10,
+        children: {
+          shape: 'circle',
+          radius: { 10: 0 },
+          fill: ['deeppink', 'red', 'magenta'],
+          duration: 800,
+          easing: 'cubic.out'
+        }
+      }).play();
+    }
+
+    resizer.addEventListener('mousedown', (e) => {
+      isDragging = true;
+      startX = e.clientX;
+      startFontSize = parseInt(window.getComputedStyle(loveText).fontSize);
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+
+      const dx = e.clientX - startX;
+      let newFontSize = startFontSize + dx;
+      newFontSize = Math.max(fontSizeMin, Math.min(fontSizeMax, newFontSize));
+
+      loveText.style.fontSize = newFontSize + 'px';
+
+      const stage = getStageByFontSize(newFontSize);
+      if (loveText.dataset.stage != stage) {
+        updateText(stage);
+        loveText.dataset.stage = stage;
+      }
+    });
+
+    document.addEventListener('mouseup', () => {
+      isDragging = false;
+    });
+
+    // Init stage tracking
+    loveText.dataset.stage = "0";
+  </script>
+</body>
+</html>
