@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Special Message</title>
+
+<style>
+body{
+    margin:0;
+    height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:#ffcd7d;
+    font-family:Arial, sans-serif;
+    overflow:hidden;
+}
+
+.container{
+    position:relative;
+    width:90%;
+    max-width:900px;
+}
+
+.text{
+    font-size:60px;
+    font-weight:bold;
+    color:#6b3fbc;
+    line-height:1.4;
+    transition:all 0.2s ease;
+    user-select:none;
+}
+
+.resizer{
+    width:30px;
+    height:100%;
+    position:absolute;
+    right:-15px;
+    top:0;
+    cursor:ew-resize;
+    background:rgba(0,0,0,0.1);
+    border-radius:5px;
+}
+
+/* Supaya HP bisa drag */
+@media (max-width:768px){
+    .resizer{
+        width:100%;
+        height:40px;
+        bottom:-50px;
+        top:auto;
+        right:0;
+        cursor:pointer;
+    }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+    <div class="text" id="message">Hai Febri</div>
+    <div class="resizer" id="resizer"></div>
+</div>
+
+<audio id="popSound" src="balloon-pop.mp3" preload="auto"></audio>
+
+<script src="https://cdn.jsdelivr.net/npm/@mojs/core"></script>
+
+<script>
+
+const message = document.getElementById("message");
+const resizer = document.getElementById("resizer");
+const popSound = document.getElementById("popSound");
+
+const texts = [
+
+`Hai Febri`,
+
+`Mungkin ini sedikit alay atau norak, tapi kalau ada waktu minta tolong dibaca ya:)`,
+
+`Jadi besok kan ulang tahunmu, aku berdoa agar kamu selalu diberikan kemudahan, diberikan kasih sayang oleh orang terdekat kamu, dan bisa melewati hari hari kamu yang berat itu`,
+
+`Mungkin aku tidak bisa memberikan apa-apa, tapi setidaknya aku menulis ini bener bener dari hati aku`,
+
+`Terima kasih sudah pernah datang ke hidup aku, dan juga terima kasih sudah membantuku sejauh ini. Bisa kenalan sama kamu itu menurutku udah cukup membuat hari hari ku tidak menjadi biasa lagi:). Mungkin aku juga minta maaf jika aku pernah salah ke kamu`,
+
+`Yah mungkin ini cuma sekedar isi hatiku, bisa dibilang pertemuan kita itu bener bener gak ketebak sih hahaha, tapi aku gak menyangka bisa mengenalmu sedekat ini, even kita bisa sampai nyaman mengobrol berdua. Itu yang membuat aku seneng sih`,
+
+`Pertemuan kita sebenarnya sangat pendek yah, kamu maret udah gak magang lagi, sedangkan aku sampe mei. Bisa dibilang itu halangan buat kita untuk ketemu tiap hari, tapi walaupun kamu pergi lebih dulu aku gak akan melupakan kamu selama magang.`,
+
+`Selamat ulang tahun ya Febri, aku belum bisa memberi yang terbaik untuk kamu. Aku hanya bisa memberi ini.`,
+
+`Kalo kamu ngerasa kepanjangan, maaf ya wehhh:(. Kalo ada waktu aja baca ini :)`
+
+];
+
+let stage = 0;
+let isDragging = false;
+let startX;
+let startFontSize;
+
+const fontMin = 30;
+const fontMax = 60;
+
+function showBurst(){
+    new mojs.Burst({
+        parent: message,
+        radius:{0:80},
+        count:10,
+        children:{
+            shape:'circle',
+            radius:{6:0},
+            fill:['deeppink','red','magenta'],
+            duration:600
+        }
+    }).play();
+}
+
+function updateStage(newStage){
+    if(newStage === stage) return;
+    stage = newStage;
+    message.innerText = texts[stage];
+
+    popSound.currentTime = 0;
+    popSound.play();
+    showBurst();
+}
+
+function handleMove(clientX){
+    const dx = clientX - startX;
+    let newSize = startFontSize + dx;
+
+    newSize = Math.max(fontMin, Math.min(fontMax,newSize));
+    message.style.fontSize = newSize + "px";
+
+    const percent = (newSize - fontMin)/(fontMax - fontMin);
+
+    let newStage = Math.floor((1 - percent) * (texts.length - 1));
+    newStage = Math.max(0, Math.min(texts.length - 1, newStage));
+
+    updateStage(newStage);
+}
+
+/* ===== LAPTOP ===== */
+resizer.addEventListener("mousedown",(e)=>{
+    isDragging = true;
+    startX = e.clientX;
+    startFontSize = parseInt(window.getComputedStyle(message).fontSize);
+});
+
+document.addEventListener("mousemove",(e)=>{
+    if(!isDragging) return;
+    handleMove(e.clientX);
+});
+
+document.addEventListener("mouseup",()=>{
+    isDragging = false;
+});
+
+/* ===== HP / TOUCH ===== */
+resizer.addEventListener("touchstart",(e)=>{
+    isDragging = true;
+    startX = e.touches[0].clientX;
+    startFontSize = parseInt(window.getComputedStyle(message).fontSize);
+});
+
+document.addEventListener("touchmove",(e)=>{
+    if(!isDragging) return;
+    handleMove(e.touches[0].clientX);
+});
+
+document.addEventListener("touchend",()=>{
+    isDragging = false;
+});
+
+</script>
+
+</body>
+</html>
